@@ -1,0 +1,24 @@
+{% extends "base.html" %}
+{% block content %}
+<div class="mt-4"></div>
+<div class="card">
+    <h4>数据导入导出</h4>
+    <hr>
+    <div class="row g-4 align-items-end">
+        <div class="col-md-6">
+            <h5>导出数据</h5>
+            <p class="text-muted">导出账单为 Excel 文件</p>
+            <a href="/excel/export" class="btn btn-success w-100">导出 Excel</a>
+        </div>
+        <div class="col-md-6">
+            <h5>导入数据</h5>
+            <p class="text-muted">上传 Excel 批量导入</p>
+            <!-- 这里修复：action 地址 + method post -->
+            <form method="post" action="/excel/import" enctype="multipart/form-data">
+                <input type="file" name="file" class="form-control mb-3" accept=".xlsx" required>
+                <button class="btn btn-primary w-100">导入 Excel</button>
+            </form>
+        </div>
+    </div>
+</div>
+{% endblock %}
