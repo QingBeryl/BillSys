@@ -1,0 +1,60 @@
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+:root {
+  --bg-cream: #FFF8F0;
+  --primary: #C4704B;
+  --primary-light: #E8A987;
+  --primary-dark: #8B4C32;
+  --brown-dark: #3D2B1F;
+  --brown-medium: #6B4E3D;
+  --text-main: #3D2B1F;
+  --text-secondary: #8C7B6B;
+  --card-shadow: 0 2px 12px rgba(140, 90, 50, 0.08);
+  --radius: 12px;
+}
+
+body {
+  font-family: 'PingFang SC', 'Microsoft YaHei', sans-serif;
+  background: var(--bg-cream);
+  color: var(--text-main);
+  line-height: 1.6;
+}
+
+/* Element Plus 主题覆盖 */
+.el-button--primary {
+  --el-button-bg-color: var(--primary);
+  --el-button-border-color: var(--primary);
+  --el-button-hover-bg-color: var(--primary-light);
+  --el-button-hover-border-color: var(--primary-light);
+  --el-button-active-bg-color: var(--primary-dark);
+  --el-button-active-border-color: var(--primary-dark);
+}
+
+.el-menu--horizontal > .el-menu-item.is-active {
+  border-bottom-color: var(--primary);
+  color: var(--primary);
+}
+
+/* 通用卡片 */
+.page-card {
+  background: #fff;
+  border-radius: var(--radius);
+  box-shadow: var(--card-shadow);
+  padding: 24px;
+  margin-bottom: 20px;
+}
+
+/* 金额颜色 */
+.money-income {
+  color: #E6A23C;
+  font-weight: 600;
+}
+
+.money-expense {
+  color: var(--primary);
+  font-weight: 600;
+}
