@@ -8,7 +8,22 @@
         </el-button>
       </div>
 
-      <el-table :data="bills" stripe v-loading="loading" max-height="600">
+      <!-- 筛选栏 -->
+      <div class="filter-bar">
+        <el-select v-model="filterType" placeholder="类型" clearable style="width: 110px;" size="default">
+          <el-option label="收入" value="收入" />
+          <el-option label="支出" value="支出" />
+        </el-select>
+        <el-select v-model="filterCategory" placeholder="分类" clearable style="width: 140px;" size="default">
+          <el-option v-for="cat in categoryOptions" :key="cat" :label="cat" :value="cat" />
+        </el-select>
+        <el-select v-model="filterAccount" placeholder="账户" clearable style="width: 130px;" size="default">
+          <el-option v-for="acc in accountOptions" :key="acc" :label="acc" :value="acc" />
+        </el-select>
+        <span class="filter-count">共 {{ filteredBills.length }} 条</span>
+      </div>
+
+      <el-table :data="filteredBills" stripe v-loading="loading" max-height="600">
         <el-table-column prop="bill_date" label="日期" width="170">
           <template #default="{ row }">{{ formatDate(row.bill_date) }}</template>
         </el-table-column>
@@ -44,12 +59,35 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from 'vue'
+import { ref, computed, onMounted } from 'vue'
 import { getBills, deleteBill } from '../api/bills'
 import { ElMessage } from 'element-plus'
 
 const bills = ref([])
 const loading = ref(false)
+
+const filterType = ref('')
+const filterCategory = ref('')
+const filterAccount = ref('')
+
+const categoryOptions = computed(() => {
+  const set = new Set(bills.value.map(b => b.category).filter(Boolean))
+  return [...set].sort()
+})
+
+const accountOptions = computed(() => {
+  const set = new Set(bills.value.map(b => b.account).filter(Boolean))
+  return [...set].sort()
+})
+
+const filteredBills = computed(() => {
+  return bills.value.filter(b => {
+    if (filterType.value && b.type !== filterType.value) return false
+    if (filterCategory.value && b.category !== filterCategory.value) return false
+    if (filterAccount.value && b.account !== filterAccount.value) return false
+    return true
+  })
+})
 
 function formatDate(d) {
   return d ? d.substring(0, 10) : ''
@@ -85,5 +123,21 @@ onMounted(loadBills)
 .list-header h4 {
   font-size: 16px;
   color: #3D2B1F;
+}
+
+.filter-bar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-bottom: 16px;
+  padding: 12px 16px;
+  background: #faf6f1;
+  border-radius: 10px;
+}
+
+.filter-count {
+  margin-left: auto;
+  font-size: 13px;
+  color: #9c8578;
 }
 </style>

@@ -88,7 +88,7 @@ const currentTitle = computed(() => {
 
 .sidebar {
   width: 220px;
-  background: #3D2B1F;
+  background: linear-gradient(180deg, #43301F 0%, #2E1F14 100%);
   display: flex;
   flex-direction: column;
   position: fixed;
@@ -96,6 +96,8 @@ const currentTitle = computed(() => {
   left: 0;
   bottom: 0;
   z-index: 100;
+  border-right: 1px solid rgba(232, 169, 135, 0.08);
+  box-shadow: 4px 0 24px rgba(30, 15, 5, 0.15);
 }
 
 .logo {
@@ -107,12 +109,13 @@ const currentTitle = computed(() => {
   font-weight: 700;
   color: #E8A987;
   letter-spacing: 2px;
-  border-bottom: 1px solid rgba(255, 255, 255, 0.08);
+  border-bottom: 1px solid rgba(255, 255, 255, 0.06);
 }
 
 .side-menu {
   border-right: none;
   flex: 1;
+  background: transparent !important;
 }
 
 .main-area {
@@ -124,12 +127,13 @@ const currentTitle = computed(() => {
 
 .top-bar {
   height: 64px;
-  background: #fff;
+  background: rgba(255, 252, 248, 0.72);
+  backdrop-filter: blur(12px);
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 0 28px;
-  box-shadow: 0 1px 8px rgba(140, 90, 50, 0.06);
+  padding: 0 32px;
+  border-bottom: 1px solid rgba(200, 170, 130, 0.1);
   position: sticky;
   top: 0;
   z-index: 50;
@@ -139,6 +143,7 @@ const currentTitle = computed(() => {
   font-size: 18px;
   font-weight: 600;
   color: #3D2B1F;
+  letter-spacing: -0.01em;
 }
 
 .user-info {
@@ -153,7 +158,7 @@ const currentTitle = computed(() => {
 }
 
 .content {
-  padding: 24px 28px;
+  padding: 28px 32px;
   flex: 1;
 }
 </style>

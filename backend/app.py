@@ -2,7 +2,6 @@ from flask import Flask, jsonify
 from flask_cors import CORS
 from config import Config
 from extensions import db, jwt
-
 from routes.auth import auth_bp
 from routes.meta import meta_bp
 from routes.bills import bills_bp
