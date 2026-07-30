@@ -104,12 +104,22 @@ function initChart(dom, option) {
   return chart
 }
 
+// 空数据提示组件
+const noDataGraphic = {
+  type: 'group',
+  left: 'center',
+  top: 'middle',
+  children: [
+    { type: 'text', style: { text: '暂无数据', fontSize: 14, fill: '#B8A99A', textAlign: 'center' } }
+  ]
+}
+
 async function loadCharts() {
   const [res12, resExp, resInc, resTop, res7, resBal] = await Promise.all([
     get12Month(), getExpensePie(), getIncomePie(), getTop5(), get7Day(), getBalanceTrend()
   ])
 
-  // 12月趋势
+  // 12月趋势（始终有12个月的数据，无需判空）
   const d12 = res12.data
   initChart(chart12month.value, {
     tooltip: { trigger: 'axis' },
@@ -123,27 +133,32 @@ async function loadCharts() {
   })
 
   // 支出饼图
+  const expData = resExp.data
   initChart(chartExpPie.value, {
     tooltip: { trigger: 'item', formatter: '{b}: ¥{c} ({d}%)' },
-    series: [{ type: 'pie', radius: ['40%', '70%'], data: resExp.data, emphasis: { itemStyle: { shadowBlur: 10 } } }]
+    graphic: expData.length ? [] : [noDataGraphic],
+    series: [{ type: 'pie', radius: ['40%', '70%'], data: expData, emphasis: { itemStyle: { shadowBlur: 10 } } }]
   })
 
   // 收入饼图
+  const incData = resInc.data
   initChart(chartIncPie.value, {
     tooltip: { trigger: 'item', formatter: '{b}: ¥{c} ({d}%)' },
-    series: [{ type: 'pie', radius: ['40%', '70%'], data: resInc.data, emphasis: { itemStyle: { shadowBlur: 10 } } }]
+    graphic: incData.length ? [] : [noDataGraphic],
+    series: [{ type: 'pie', radius: ['40%', '70%'], data: incData, emphasis: { itemStyle: { shadowBlur: 10 } } }]
   })
 
   // Top5 横向柱状
   const top5Data = resTop.data
   initChart(chartTop5.value, {
     tooltip: { trigger: 'axis' },
+    graphic: top5Data.length ? [] : [noDataGraphic],
     xAxis: { type: 'value' },
     yAxis: { type: 'category', data: top5Data.map(i => i.name).reverse() },
     series: [{ type: 'bar', data: top5Data.map(i => i.value).reverse(), itemStyle: { color: '#C4704B', borderRadius: [0, 6, 6, 0] } }]
   })
 
-  // 7天收支
+  // 7天收支（始终有7天数据，无需判空）
   const d7 = res7.data
   initChart(chart7day.value, {
     tooltip: { trigger: 'axis' },
@@ -160,6 +175,7 @@ async function loadCharts() {
   const bal = resBal.data
   initChart(chartBalance.value, {
     tooltip: { trigger: 'axis' },
+    graphic: bal.length ? [] : [noDataGraphic],
     xAxis: { type: 'category', data: bal.map(i => i.day) },
     yAxis: { type: 'value' },
     series: [{

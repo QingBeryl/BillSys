@@ -165,12 +165,34 @@ class Bill(db.Model):
                 data[month][0] += b.money
             else:
                 data[month][1] += abs(b.money)
-        if not data:
-            return [{"month": "2025-01", "income": 100, "expense": 50},
-                    {"month": "2025-02", "income": 200, "expense": 150},
-                    {"month": "2025-03", "income": 300, "expense": 100}]
-        return [{"month": k, "income": round(v[0], 2), "expense": round(v[1], 2)}
-                for k, v in sorted(data.items())]
+        # 始终返回最近12个月，没有数据的月份填0
+        now = datetime.now()
+        months = []
+        for i in range(11, -1, -1):
+            d = now - timedelta(days=i * 30)
+            # 用年月偏移来生成最近12个月
+            y, m = now.year, now.month - i
+            while m <= 0:
+                m += 12
+                y -= 1
+            months.append(f"{y:04d}-{m:02d}")
+        # 去重并排序（上面的近似算法可能有重复，用集合修正）
+        seen = set()
+        unique_months = []
+        for mk in months:
+            if mk not in seen:
+                seen.add(mk)
+                unique_months.append(mk)
+        # 如果不足12个，从最早月份往前补
+        while len(unique_months) < 12:
+            y, m = int(unique_months[0][:4]), int(unique_months[0][5:7]) - 1
+            if m <= 0:
+                m += 12
+                y -= 1
+            unique_months.insert(0, f"{y:04d}-{m:02d}")
+        unique_months = unique_months[-12:]
+        return [{"month": mk, "income": round(data.get(mk, [0, 0])[0], 2),
+                 "expense": round(data.get(mk, [0, 0])[1], 2)} for mk in unique_months]
 
     @staticmethod
     def get_pie_data(user_id):
@@ -178,9 +200,6 @@ class Bill(db.Model):
         data = {}
         for b in bills:
             data[b.category] = data.get(b.category, 0.0) + abs(b.money)
-        if not data:
-            return [{"name": "餐饮", "value": 100}, {"name": "交通", "value": 80},
-                    {"name": "购物", "value": 60}]
         return [{"name": k, "value": round(v, 2)} for k, v in data.items()]
 
     @staticmethod
@@ -188,11 +207,8 @@ class Bill(db.Model):
         bills = Bill.query.filter_by(user_id=user_id, type='收入').all()
         res = {}
         for b in bills:
-            if b.sub_category:
-                res[b.sub_category] = res.get(b.sub_category, 0.0) + b.money
-        if not res:
-            return [{"name": "工资", "value": 1000}, {"name": "奖金", "value": 800},
-                    {"name": "兼职", "value": 500}]
+            key = b.sub_category or b.category or '未分类'
+            res[key] = res.get(key, 0.0) + b.money
         return [{"name": k, "value": round(v, 2)} for k, v in res.items()]
 
     @staticmethod
@@ -201,10 +217,6 @@ class Bill(db.Model):
         res = {}
         for b in bills:
             res[b.category] = res.get(b.category, 0.0) + abs(b.money)
-        if not res:
-            return [{"name": "餐饮", "value": 100}, {"name": "交通", "value": 80},
-                    {"name": "购物", "value": 60}, {"name": "娱乐", "value": 40},
-                    {"name": "其他", "value": 20}]
         sorted_items = sorted(res.items(), key=lambda x: x[1], reverse=True)[:5]
         return [{"name": k, "value": round(v, 2)} for k, v in sorted_items]
 
@@ -221,17 +233,8 @@ class Bill(db.Model):
             else:
                 data[day][1] += abs(b.money)
         days = [(date.today() - timedelta(days=i)).strftime("%m-%d") for i in range(6, -1, -1)]
-        final = [{"day": d, "income": round(data.get(d, [0, 0])[0], 2),
-                  "expense": round(data.get(d, [0, 0])[1], 2)} for d in days]
-        if all(v["income"] == 0 and v["expense"] == 0 for v in final):
-            return [{"day": "05-01", "income": 50, "expense": 30},
-                    {"day": "05-02", "income": 100, "expense": 40},
-                    {"day": "05-03", "income": 0, "expense": 20},
-                    {"day": "05-04", "income": 200, "expense": 50},
-                    {"day": "05-05", "income": 0, "expense": 10},
-                    {"day": "05-06", "income": 150, "expense": 60},
-                    {"day": "05-07", "income": 80, "expense": 25}]
-        return final
+        return [{"day": d, "income": round(data.get(d, [0, 0])[0], 2),
+                 "expense": round(data.get(d, [0, 0])[1], 2)} for d in days]
 
     @staticmethod
     def get_balance_trend(user_id):
@@ -245,8 +248,4 @@ class Bill(db.Model):
             else:
                 balance -= abs(b.money)
             day_map[day] = round(balance, 2)
-        if not day_map:
-            return [{"day": "05-01", "balance": 100}, {"day": "05-02", "balance": 150},
-                    {"day": "05-03", "balance": 120}, {"day": "05-04", "balance": 200},
-                    {"day": "05-05", "balance": 180}]
         return [{"day": k, "balance": v} for k, v in sorted(day_map.items())]
