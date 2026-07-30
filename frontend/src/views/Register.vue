@@ -2,22 +2,26 @@
   <div class="login-wrapper">
     <div class="login-card">
       <h2 class="login-title">BillSys</h2>
-      <p class="login-subtitle">个人账单管理系统</p>
-      <el-form :model="form" @submit.prevent="handleLogin" label-position="top">
+      <p class="login-subtitle">创建新账号</p>
+      <el-form :model="form" @submit.prevent="handleRegister" label-position="top">
         <el-form-item label="用户名">
-          <el-input v-model="form.username" placeholder="请输入用户名" prefix-icon="User" size="large" />
+          <el-input v-model="form.username" placeholder="2-20个字符" prefix-icon="User" size="large" />
         </el-form-item>
         <el-form-item label="密码">
-          <el-input v-model="form.password" type="password" placeholder="请输入密码"
-                    prefix-icon="Lock" size="large" show-password @keyup.enter="handleLogin" />
+          <el-input v-model="form.password" type="password" placeholder="至少6位"
+                    prefix-icon="Lock" size="large" show-password />
+        </el-form-item>
+        <el-form-item label="确认密码">
+          <el-input v-model="form.confirm" type="password" placeholder="再次输入密码"
+                    prefix-icon="Lock" size="large" show-password @keyup.enter="handleRegister" />
         </el-form-item>
         <el-button type="primary" size="large" :loading="loading"
-                   class="login-btn" @click="handleLogin">
-          登 录
+                   class="login-btn" @click="handleRegister">
+          注 册
         </el-button>
       </el-form>
       <p class="switch-link">
-        没有账号？<router-link to="/register">去注册</router-link>
+        已有账号？<router-link to="/login">去登录</router-link>
       </p>
     </div>
   </div>
@@ -26,24 +30,31 @@
 <script setup>
 import { reactive, ref } from 'vue'
 import { useRouter } from 'vue-router'
-import { useUserStore } from '../stores/user'
+import { register } from '../api/auth'
 import { ElMessage } from 'element-plus'
 
 const router = useRouter()
-const userStore = useUserStore()
 const loading = ref(false)
-const form = reactive({ username: '', password: '' })
+const form = reactive({ username: '', password: '', confirm: '' })
 
-async function handleLogin() {
+async function handleRegister() {
   if (!form.username || !form.password) {
     ElMessage.warning('请输入用户名和密码')
     return
   }
+  if (form.password.length < 6) {
+    ElMessage.warning('密码长度不能少于6位')
+    return
+  }
+  if (form.password !== form.confirm) {
+    ElMessage.warning('两次输入的密码不一致')
+    return
+  }
   loading.value = true
   try {
-    await userStore.login(form.username, form.password)
-    ElMessage.success('登录成功')
-    router.push('/dashboard')
+    await register({ username: form.username, password: form.password })
+    ElMessage.success('注册成功，请登录')
+    router.push('/login')
   } catch (e) {
     // 错误已在拦截器中处理
   } finally {

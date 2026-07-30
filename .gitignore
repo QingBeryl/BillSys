@@ -1,24 +1,22 @@
-# IDE
-.idea/
-.vscode/
-*.iml
+# SQLite
+billsys.db
 
 # Python
 __pycache__/
-*.py[cod]
-*.egg-info/
-dist/
-build/
+*.pyc
+*.pyo
 venv/
-.venv/
+.env
 
 # Node
 frontend/node_modules/
 frontend/dist/
 
+# IDE
+.idea/
+.vscode/
+*.swp
+
 # OS
 .DS_Store
 Thumbs.db
-
-# Env
-.env

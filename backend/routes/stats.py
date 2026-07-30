@@ -69,10 +69,10 @@ def recent():
     result = []
     for b in bills:
         result.append({
-            'bill_date': b[0].strftime('%Y-%m-%d %H:%M:%S') if hasattr(b[0], 'strftime') else str(b[0]),
-            'type': b[1],
-            'money': float(b[2]),
-            'category': b[3],
-            'sub_category': b[4]
+            'bill_date': b.bill_date.strftime('%Y-%m-%d %H:%M:%S') if b.bill_date else '',
+            'type': b.type,
+            'money': b.money,
+            'category': b.category,
+            'sub_category': b.sub_category
         })
     return jsonify(result)

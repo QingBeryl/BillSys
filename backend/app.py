@@ -1,7 +1,7 @@
 from flask import Flask, jsonify
 from flask_cors import CORS
 from config import Config
-from extensions import mysql, jwt
+from extensions import db, jwt
 
 from routes.auth import auth_bp
 from routes.meta import meta_bp
@@ -17,7 +17,7 @@ def create_app():
     app.config.from_object(Config)
 
     # 初始化扩展
-    mysql.init_app(app)
+    db.init_app(app)
     jwt.init_app(app)
 
     # CORS：允许前端dev server跨域
@@ -31,6 +31,10 @@ def create_app():
     app.register_blueprint(transfer_bp)
     app.register_blueprint(excel_bp)
     app.register_blueprint(users_bp)
+
+    # 自动建表（SQLite 首次启动时创建 billsys.db）
+    with app.app_context():
+        db.create_all()
 
     # 全局错误处理
     @app.errorhandler(404)

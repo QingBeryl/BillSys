@@ -5,29 +5,12 @@ from models.bill import Bill
 bills_bp = Blueprint('bills', __name__, url_prefix='/api/bills')
 
 
-def serialize_bill(row):
-    """将数据库行转为可JSON序列化的字典"""
-    return {
-        'id': row[0],
-        'user_id': row[1],
-        'bill_date': row[2].strftime('%Y-%m-%d %H:%M:%S') if hasattr(row[2], 'strftime') else str(row[2]),
-        'type': row[3],
-        'money': float(row[4]),
-        'category': row[5],
-        'sub_category': row[6],
-        'account': row[7],
-        'book_name': row[8] if len(row) > 8 else '日常账本',
-        'refund': float(row[9]) if len(row) > 9 and row[9] else 0,
-        'remark': row[10] if len(row) > 10 else ''
-    }
-
-
 @bills_bp.route('', methods=['GET'])
 @jwt_required()
 def get_bills():
     uid = int(get_jwt_identity())
     bills = Bill.get_by_user(uid)
-    return jsonify([serialize_bill(b) for b in bills])
+    return jsonify([b.to_dict() for b in bills])
 
 
 @bills_bp.route('/<int:bill_id>', methods=['GET'])
@@ -37,7 +20,7 @@ def get_bill(bill_id):
     bill = Bill.get_by_id(bill_id, uid)
     if not bill:
         return jsonify({'error': '账单不存在'}), 404
-    return jsonify(serialize_bill(bill))
+    return jsonify(bill.to_dict())
 
 
 @bills_bp.route('', methods=['POST'])
@@ -115,4 +98,4 @@ def query_bills():
         data.get('min'),
         data.get('max')
     )
-    return jsonify([serialize_bill(b) for b in results])
+    return jsonify([b.to_dict() for b in results])

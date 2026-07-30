@@ -21,7 +21,7 @@ def admin_required(fn):
 @admin_required
 def get_users():
     users = User.get_all()
-    return jsonify([{'id': u[0], 'username': u[1], 'is_admin': u[2]} for u in users])
+    return jsonify([{'id': u.id, 'username': u.username, 'is_admin': u.is_admin} for u in users])
 
 
 @users_bp.route('', methods=['POST'])
@@ -30,10 +30,9 @@ def add_user():
     data = request.get_json()
     if not data or not data.get('username') or not data.get('password'):
         return jsonify({'error': '用户名和密码不能为空'}), 400
-    try:
-        User.add(data['username'], data['password'])
-    except Exception:
+    if User.find_by_username(data['username']):
         return jsonify({'error': '用户名已存在'}), 409
+    User.add(data['username'], data['password'])
     return jsonify({'message': '添加成功'}), 201
 
 

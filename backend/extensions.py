@@ -1,5 +1,5 @@
-from flask_mysqldb import MySQL
+from flask_sqlalchemy import SQLAlchemy
 from flask_jwt_extended import JWTManager
 
-mysql = MySQL()
+db = SQLAlchemy()
 jwt = JWTManager()

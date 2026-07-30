@@ -1,25 +1,18 @@
 import pandas as pd
-from extensions import mysql
 from io import BytesIO
+from models.bill import Bill
+from extensions import db
 
 
 def export_excel(user_id):
-    cur = mysql.connection.cursor()
-    cur.execute("""
-        SELECT bill_date, type, money, category, sub_category, account
-        FROM bills
-        WHERE user_id = %s
-        ORDER BY bill_date DESC
-    """, (user_id,))
-    data = cur.fetchall()
-    cur.close()
+    bills = Bill.query.filter_by(user_id=user_id).order_by(Bill.bill_date.desc()).all()
 
     columns = ['日期', '收支类型', '金额', '类别', '二级分类', '账户']
     rows = []
-    for row in data:
+    for b in bills:
         rows.append([
-            row[0].strftime('%Y-%m-%d') if hasattr(row[0], 'strftime') else str(row[0]),
-            row[1], float(row[2]), row[3], row[4], row[5]
+            b.bill_date.strftime('%Y-%m-%d') if b.bill_date else '',
+            b.type, b.money, b.category, b.sub_category, b.account
         ])
 
     df = pd.DataFrame(rows, columns=columns)
@@ -32,7 +25,6 @@ def export_excel(user_id):
 
 def import_excel(file, user_id):
     df = pd.read_excel(file)
-    cur = mysql.connection.cursor()
     count = 0
 
     for _, row in df.iterrows():
@@ -45,12 +37,8 @@ def import_excel(file, user_id):
         account = row.get('账户')
 
         if bill_date and type_val and money:
-            cur.execute("""
-                INSERT INTO bills(user_id, bill_date, type, money, category, sub_category, account)
-                VALUES (%s, %s, %s, %s, %s, %s, %s)
-            """, (user_id, bill_date, type_val, money, category, sub_category, account))
+            Bill.add(user_id, str(bill_date), type_val, money,
+                     category or '', sub_category or '', account or '')
             count += 1
 
-    mysql.connection.commit()
-    cur.close()
     return count

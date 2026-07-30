@@ -7,6 +7,11 @@ const routes = [
     component: () => import('../views/Login.vue')
   },
   {
+    path: '/register',
+    name: 'Register',
+    component: () => import('../views/Register.vue')
+  },
+  {
     path: '/',
     component: () => import('../views/Layout.vue'),
     redirect: '/dashboard',
@@ -31,7 +36,7 @@ const router = createRouter({
 // 导航守卫
 router.beforeEach((to, from, next) => {
   const token = localStorage.getItem('token')
-  if (to.path !== '/login' && !token) {
+  if (to.path !== '/login' && to.path !== '/register' && !token) {
     next('/login')
   } else {
     next()
