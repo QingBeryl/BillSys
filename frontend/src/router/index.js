@@ -20,8 +20,7 @@ const routes = [
       { path: 'bills', name: 'BillList', component: () => import('../views/BillList.vue') },
       { path: 'bill/add', name: 'BillAdd', component: () => import('../views/BillForm.vue') },
       { path: 'bill/edit/:id', name: 'BillEdit', component: () => import('../views/BillForm.vue') },
-      { path: 'query', name: 'Query', component: () => import('../views/Query.vue') },
-      { path: 'transfer', name: 'Transfer', component: () => import('../views/Transfer.vue') },
+      { path: 'budget', name: 'Budget', component: () => import('../views/Budget.vue') },
       { path: 'excel', name: 'Excel', component: () => import('../views/Excel.vue') },
       { path: 'users', name: 'UserManage', component: () => import('../views/UserManage.vue') }
     ]

@@ -10,12 +10,24 @@
 
       <!-- 筛选栏 -->
       <div class="filter-bar">
+        <el-date-picker
+          v-model="dateRange"
+          type="daterange"
+          range-separator="至"
+          start-placeholder="开始日期"
+          end-placeholder="结束日期"
+          value-format="YYYY-MM-DD"
+          style="width: 260px;"
+          size="default"
+          clearable
+        />
         <el-select v-model="filterType" placeholder="类型" clearable style="width: 110px;" size="default">
           <el-option label="收入" value="收入" />
           <el-option label="支出" value="支出" />
         </el-select>
-        <el-select v-model="filterCategory" placeholder="分类" clearable style="width: 140px;" size="default">
-          <el-option v-for="cat in categoryOptions" :key="cat" :label="cat" :value="cat" />
+        <el-select v-model="filterSubCategories" placeholder="子分类" clearable multiple collapse-tags
+                   collapse-tags-tooltip style="width: 200px;" size="default">
+          <el-option v-for="cat in subCategoryOptions" :key="cat" :label="cat" :value="cat" />
         </el-select>
         <el-select v-model="filterAccount" placeholder="账户" clearable style="width: 130px;" size="default">
           <el-option v-for="acc in accountOptions" :key="acc" :label="acc" :value="acc" />
@@ -23,7 +35,26 @@
         <span class="filter-count">共 {{ filteredBills.length }} 条</span>
       </div>
 
-      <el-table :data="filteredBills" stripe v-loading="loading" max-height="600">
+      <!-- 总账汇总 -->
+      <div class="summary-bar">
+        <span class="summary-item income">收入 ¥{{ totalIncome.toFixed(2) }}</span>
+        <span class="summary-item expense">支出 ¥{{ totalExpense.toFixed(2) }}</span>
+        <span class="summary-item" :class="totalBalance >= 0 ? 'income' : 'expense'">
+          结余 ¥{{ totalBalance.toFixed(2) }}
+        </span>
+        <span class="summary-note" v-if="excludedIds.size">（已排除 {{ excludedIds.size }} 笔不计入总账）</span>
+      </div>
+
+      <el-table :data="filteredBills" stripe v-loading="loading" max-height="600"
+                :row-class-name="rowClassName">
+        <el-table-column width="50" align="center">
+          <template #header>
+            <el-checkbox v-model="excludeAll" @change="toggleExcludeAll" :indeterminate="isIndeterminate" />
+          </template>
+          <template #default="{ row }">
+            <el-checkbox :model-value="excludedIds.has(row.id)" @change="toggleExclude(row.id)" />
+          </template>
+        </el-table-column>
         <el-table-column prop="bill_date" label="日期" width="170">
           <template #default="{ row }">{{ formatDate(row.bill_date) }}</template>
         </el-table-column>
@@ -39,7 +70,6 @@
             </span>
           </template>
         </el-table-column>
-        <el-table-column prop="category" label="分类" width="110" />
         <el-table-column prop="sub_category" label="子分类" width="110" />
         <el-table-column prop="account" label="账户" width="110" />
         <el-table-column prop="remark" label="备注" show-overflow-tooltip />
@@ -59,20 +89,37 @@
 </template>
 
 <script setup>
-import { ref, computed, onMounted } from 'vue'
+import { ref, computed, onMounted, watch } from 'vue'
 import { getBills, deleteBill } from '../api/bills'
+import { getMeta } from '../api/auth'
 import { ElMessage } from 'element-plus'
 
 const bills = ref([])
 const loading = ref(false)
+const metaCategories = ref({})
 
 const filterType = ref('')
-const filterCategory = ref('')
+const filterSubCategories = ref([])
 const filterAccount = ref('')
+const dateRange = ref(null)
 
-const categoryOptions = computed(() => {
-  const set = new Set(bills.value.map(b => b.category).filter(Boolean))
-  return [...set].sort()
+// 临时排除的账单ID（不计入总账，但不删除）
+const excludedIds = ref(new Set())
+
+const subCategoryOptions = computed(() => {
+  if (filterType.value && metaCategories.value[filterType.value]) {
+    return metaCategories.value[filterType.value]
+  }
+  // 未选类型时显示所有子分类
+  const all = new Set()
+  Object.values(metaCategories.value).forEach(list => list.forEach(s => all.add(s)))
+  return [...all].sort()
+})
+
+// 切换类型时清除不属于新类型的子分类选项
+watch(filterType, () => {
+  const valid = subCategoryOptions.value
+  filterSubCategories.value = filterSubCategories.value.filter(s => valid.includes(s))
 })
 
 const accountOptions = computed(() => {
@@ -83,11 +130,63 @@ const accountOptions = computed(() => {
 const filteredBills = computed(() => {
   return bills.value.filter(b => {
     if (filterType.value && b.type !== filterType.value) return false
-    if (filterCategory.value && b.category !== filterCategory.value) return false
+    if (filterSubCategories.value.length && !filterSubCategories.value.includes(b.sub_category)) return false
     if (filterAccount.value && b.account !== filterAccount.value) return false
+    if (dateRange.value && dateRange.value.length === 2) {
+      const day = b.bill_date ? b.bill_date.substring(0, 10) : ''
+      if (day < dateRange.value[0] || day > dateRange.value[1]) return false
+    }
     return true
   })
 })
+
+// 计入总账的账单（排除勾选的）
+const countedBills = computed(() => {
+  return filteredBills.value.filter(b => !excludedIds.value.has(b.id))
+})
+
+const totalIncome = computed(() => {
+  return countedBills.value.filter(b => b.type === '收入').reduce((s, b) => s + Math.abs(b.money), 0)
+})
+
+const totalExpense = computed(() => {
+  return countedBills.value.filter(b => b.type === '支出').reduce((s, b) => s + Math.abs(b.money), 0)
+})
+
+const totalBalance = computed(() => totalIncome.value - totalExpense.value)
+
+// 全选排除
+const excludeAll = ref(false)
+const isIndeterminate = computed(() => {
+  const ids = filteredBills.value.map(b => b.id)
+  const excluded = ids.filter(id => excludedIds.value.has(id))
+  return excluded.length > 0 && excluded.length < ids.length
+})
+
+function toggleExcludeAll(val) {
+  if (val) {
+    filteredBills.value.forEach(b => excludedIds.value.add(b.id))
+  } else {
+    filteredBills.value.forEach(b => excludedIds.value.delete(b.id))
+  }
+  excludedIds.value = new Set(excludedIds.value)
+}
+
+function toggleExclude(id) {
+  if (excludedIds.value.has(id)) {
+    excludedIds.value.delete(id)
+  } else {
+    excludedIds.value.add(id)
+  }
+  excludedIds.value = new Set(excludedIds.value)
+  // 同步全选状态
+  const ids = filteredBills.value.map(b => b.id)
+  excludeAll.value = ids.length > 0 && ids.every(i => excludedIds.value.has(i))
+}
+
+function rowClassName({ row }) {
+  return excludedIds.value.has(row.id) ? 'row-excluded' : ''
+}
 
 function formatDate(d) {
   return d ? d.substring(0, 10) : ''
@@ -109,7 +208,11 @@ async function handleDelete(id) {
   loadBills()
 }
 
-onMounted(loadBills)
+onMounted(async () => {
+  const metaRes = await getMeta()
+  metaCategories.value = metaRes.data.categories
+  loadBills()
+})
 </script>
 
 <style scoped>
@@ -129,7 +232,7 @@ onMounted(loadBills)
   display: flex;
   align-items: center;
   gap: 12px;
-  margin-bottom: 16px;
+  margin-bottom: 12px;
   padding: 12px 16px;
   background: #faf6f1;
   border-radius: 10px;
@@ -139,5 +242,34 @@ onMounted(loadBills)
   margin-left: auto;
   font-size: 13px;
   color: #9c8578;
+}
+
+.summary-bar {
+  display: flex;
+  align-items: center;
+  gap: 20px;
+  margin-bottom: 16px;
+  padding: 10px 16px;
+  background: #fff;
+  border: 1px solid rgba(200, 170, 130, 0.15);
+  border-radius: 10px;
+}
+
+.summary-item {
+  font-size: 14px;
+  font-weight: 600;
+}
+
+.summary-item.income { color: #E6A23C; }
+.summary-item.expense { color: #C4704B; }
+
+.summary-note {
+  font-size: 12px;
+  color: #B8A99A;
+}
+
+:deep(.row-excluded) {
+  opacity: 0.4;
+  text-decoration: line-through;
 }
 </style>

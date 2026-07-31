@@ -19,12 +19,6 @@
 
           <!-- 双列网格区 -->
           <div class="form-grid">
-            <el-form-item label="分类" class="stagger-item" style="--i:1">
-              <el-select v-model="form.category" placeholder="选择分类" @change="onCategoryChange" style="width: 100%;">
-                <el-option v-for="cat in categoryKeys" :key="cat" :label="cat" :value="cat" />
-              </el-select>
-            </el-form-item>
-
             <el-form-item label="子分类" class="stagger-item" style="--i:2">
               <el-select v-model="form.sub_category" placeholder="选择子分类" style="width: 100%;">
                 <el-option v-for="sub in subCategories" :key="sub" :label="sub" :value="sub" />
@@ -147,7 +141,7 @@ let pieChart = null
 
 const form = reactive({
   type: '支出',
-  category: '',
+  category: '支出',
   sub_category: '',
   money: 0,
   bill_date: '',
@@ -157,24 +151,12 @@ const form = reactive({
   remark: ''
 })
 
-const categoryKeys = computed(() => {
-  const keys = Object.keys(categories.value)
-  if (form.type === '收入') {
-    return keys.filter(k => k === '收入')
-  }
-  return keys.filter(k => k !== '收入')
-})
-
 const subCategories = computed(() => {
-  return categories.value[form.category] || []
+  return categories.value[form.type] || []
 })
-
-function onCategoryChange() {
-  form.sub_category = ''
-}
 
 function onTypeChange() {
-  form.category = ''
+  form.category = form.type
   form.sub_category = ''
 }
 
@@ -214,7 +196,7 @@ onMounted(async () => {
       const billRes = await getBill(route.params.id)
       const b = billRes.data
       form.type = b.type
-      form.category = b.category
+      form.category = b.type
       form.sub_category = b.sub_category
       form.money = b.money
       form.bill_date = b.bill_date

@@ -48,38 +48,15 @@
         <div ref="chartBalance" class="chart-box"></div>
       </div>
     </div>
-
-    <!-- 最近账单 -->
-    <div class="page-card">
-      <h4 style="margin-bottom: 16px;">最近交易</h4>
-      <el-table :data="recentBills" stripe size="small">
-        <el-table-column prop="bill_date" label="日期" width="180" />
-        <el-table-column prop="type" label="类型" width="80">
-          <template #default="{ row }">
-            <el-tag :type="row.type === '收入' ? 'warning' : 'danger'" size="small">{{ row.type }}</el-tag>
-          </template>
-        </el-table-column>
-        <el-table-column prop="money" label="金额" width="120">
-          <template #default="{ row }">
-            <span :class="row.type === '收入' ? 'money-income' : 'money-expense'">
-              {{ row.type === '收入' ? '+' : '-' }}¥{{ Math.abs(row.money).toFixed(2) }}
-            </span>
-          </template>
-        </el-table-column>
-        <el-table-column prop="category" label="分类" width="120" />
-        <el-table-column prop="sub_category" label="子分类" />
-      </el-table>
-    </div>
   </div>
 </template>
 
 <script setup>
 import { ref, onMounted, onUnmounted, computed } from 'vue'
 import * as echarts from 'echarts'
-import { getSummary, get12Month, getExpensePie, getIncomePie, getTop5, get7Day, getBalanceTrend, getRecent } from '../api/stats'
+import { getSummary, get12Month, getExpensePie, getIncomePie, getTop5, get7Day, getBalanceTrend } from '../api/stats'
 
 const summary = ref({ month: { income: 0, expense: 0, balance: 0 }, year: { income: 0, expense: 0, balance: 0 }, all: { income: 0, expense: 0, balance: 0 } })
-const recentBills = ref([])
 
 const statGroups = computed(() => [
   { label: '本月', data: summary.value.month },
@@ -192,9 +169,8 @@ function handleResize() {
 
 onMounted(async () => {
   try {
-    const [sumRes, recentRes] = await Promise.all([getSummary(), getRecent()])
+    const sumRes = await getSummary()
     summary.value = sumRes.data
-    recentBills.value = recentRes.data
     await loadCharts()
     window.addEventListener('resize', handleResize)
   } catch (e) {
