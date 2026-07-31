@@ -9,6 +9,7 @@ from routes.stats import stats_bp
 from routes.transfer import transfer_bp
 from routes.excel import excel_bp
 from routes.users import users_bp
+from routes.budget import budget_bp
 
 
 def create_app():
@@ -30,6 +31,7 @@ def create_app():
     app.register_blueprint(transfer_bp)
     app.register_blueprint(excel_bp)
     app.register_blueprint(users_bp)
+    app.register_blueprint(budget_bp)
 
     # 自动建表（SQLite 首次启动时创建 billsys.db）
     with app.app_context():

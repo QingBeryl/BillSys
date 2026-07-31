@@ -1,6 +1,6 @@
 from flask import Blueprint, request, jsonify, send_file
 from flask_jwt_extended import jwt_required, get_jwt_identity
-from utils.excel_utils import export_excel, import_excel
+from utils.excel_utils import export_excel, import_excel, generate_report
 
 excel_bp = Blueprint('excel', __name__, url_prefix='/api/excel')
 
@@ -13,6 +13,24 @@ def export():
     return send_file(
         output,
         download_name="bills.xlsx",
+        mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
+        as_attachment=True
+    )
+
+
+@excel_bp.route('/report', methods=['GET'])
+@jwt_required()
+def report():
+    uid = int(get_jwt_identity())
+    period_type = request.args.get('type', 'month')
+    period_value = request.args.get('period', '')
+    if not period_value:
+        return jsonify({'error': '请指定时间段'}), 400
+    output = generate_report(uid, period_type, period_value)
+    filename = f"报表_{period_value}.xlsx"
+    return send_file(
+        output,
+        download_name=filename,
         mimetype="application/vnd.openxmlformats-officedocument.spreadsheetml.sheet",
         as_attachment=True
     )
