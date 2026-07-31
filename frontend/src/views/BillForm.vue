@@ -64,6 +64,16 @@
       </div>
     </div>
 
+    <!-- 成功反馈动画 -->
+    <transition name="coin-pop">
+      <div class="success-overlay" v-if="showSuccess">
+        <div class="coin-bounce">
+          <span class="coin">¥</span>
+        </div>
+        <span class="success-text">{{ isEdit ? '已保存' : '记好了' }}</span>
+      </div>
+    </transition>
+
     <!-- 右侧面板 -->
     <div class="side-panel">
       <!-- 本月速览 -->
@@ -128,6 +138,7 @@ const router = useRouter()
 const isEdit = computed(() => !!route.params.id)
 const pageLoading = ref(false)
 const saving = ref(false)
+const showSuccess = ref(false)
 
 const categories = ref({})
 const accounts = ref([])
@@ -223,12 +234,14 @@ async function handleSubmit() {
   try {
     if (isEdit.value) {
       await updateBill(route.params.id, { ...form })
-      ElMessage.success('修改成功')
     } else {
       await addBill({ ...form })
-      ElMessage.success('添加成功')
     }
-    router.push('/bills')
+    // 播放硬币动画，短暂停留后跳转
+    showSuccess.value = true
+    setTimeout(() => {
+      router.push('/bills')
+    }, 950)
   } finally {
     saving.value = false
   }
@@ -513,4 +526,62 @@ async function handleSubmit() {
   text-align: center;
   padding: 16px 0;
 }
+
+/* ===== 成功反馈动画 ===== */
+.success-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 2000;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 16px;
+  background: rgba(255, 251, 245, 0.75);
+  backdrop-filter: blur(6px);
+}
+
+.coin-bounce {
+  width: 72px;
+  height: 72px;
+  border-radius: 50%;
+  background: linear-gradient(135deg, #f5c862 0%, #e6a23c 50%, #d4874e 100%);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  box-shadow: 0 8px 32px rgba(230, 162, 60, 0.35),
+              inset 0 2px 4px rgba(255, 255, 255, 0.5);
+  animation: coinJump 700ms cubic-bezier(0.34, 1.56, 0.64, 1) both;
+}
+
+.coin {
+  font-size: 30px;
+  font-weight: 800;
+  color: #fff;
+  text-shadow: 0 1px 3px rgba(140, 80, 20, 0.4);
+}
+
+@keyframes coinJump {
+  0% { transform: scale(0) translateY(30px); opacity: 0; }
+  50% { transform: scale(1.2) translateY(-12px); opacity: 1; }
+  70% { transform: scale(0.95) translateY(2px); }
+  100% { transform: scale(1) translateY(0); }
+}
+
+.success-text {
+  font-size: 16px;
+  font-weight: 600;
+  color: #6b4e3d;
+  animation: textUp 500ms 250ms cubic-bezier(0.32, 0.72, 0, 1) both;
+}
+
+@keyframes textUp {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+/* 过渡 */
+.coin-pop-enter-active { transition: opacity 200ms ease-out; }
+.coin-pop-leave-active { transition: opacity 300ms ease-in; }
+.coin-pop-enter-from, .coin-pop-leave-to { opacity: 0; }
 </style>

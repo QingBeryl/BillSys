@@ -52,16 +52,49 @@
 </template>
 
 <script setup>
-import { ref, onMounted, onUnmounted, computed } from 'vue'
+import { ref, reactive, onMounted, onUnmounted, computed } from 'vue'
 import * as echarts from 'echarts'
 import { getSummary, get12Month, getExpensePie, getIncomePie, getTop5, get7Day, getBalanceTrend } from '../api/stats'
 
 const summary = ref({ month: { income: 0, expense: 0, balance: 0 }, year: { income: 0, expense: 0, balance: 0 }, all: { income: 0, expense: 0, balance: 0 } })
 
+// ===== 数字滚动动画 =====
+const animated = reactive({
+  month: { income: 0, expense: 0, balance: 0 },
+  year: { income: 0, expense: 0, balance: 0 },
+  all: { income: 0, expense: 0, balance: 0 }
+})
+
+function easeOutExpo(t) {
+  return t === 1 ? 1 : 1 - Math.pow(2, -10 * t)
+}
+
+function animateValue(obj, key, target, duration = 1200) {
+  const start = performance.now()
+  function tick(now) {
+    const progress = Math.min((now - start) / duration, 1)
+    obj[key] = target * easeOutExpo(progress)
+    if (progress < 1) requestAnimationFrame(tick)
+  }
+  requestAnimationFrame(tick)
+}
+
+function runCountUp() {
+  const groups = ['month', 'year', 'all']
+  const keys = ['income', 'expense', 'balance']
+  groups.forEach((g, gi) => {
+    keys.forEach((k, ki) => {
+      const target = summary.value[g][k]
+      // 每组错开 150ms，每个字段再错开 80ms，形成波浪感
+      setTimeout(() => animateValue(animated[g], k, target, 1100), gi * 150 + ki * 80)
+    })
+  })
+}
+
 const statGroups = computed(() => [
-  { label: '本月', data: summary.value.month },
-  { label: '本年', data: summary.value.year },
-  { label: '总计', data: summary.value.all }
+  { label: '本月', data: animated.month },
+  { label: '本年', data: animated.year },
+  { label: '总计', data: animated.all }
 ])
 
 // 图表DOM引用
@@ -171,6 +204,7 @@ onMounted(async () => {
   try {
     const sumRes = await getSummary()
     summary.value = sumRes.data
+    runCountUp()
     await loadCharts()
     window.addEventListener('resize', handleResize)
   } catch (e) {
@@ -198,6 +232,16 @@ onUnmounted(() => {
   border-radius: 12px;
   padding: 20px;
   box-shadow: 0 2px 12px rgba(140, 90, 50, 0.08);
+  animation: cardIn 600ms cubic-bezier(0.32, 0.72, 0, 1) both;
+}
+
+.stat-group:nth-child(1) { animation-delay: 0ms; }
+.stat-group:nth-child(2) { animation-delay: 100ms; }
+.stat-group:nth-child(3) { animation-delay: 200ms; }
+
+@keyframes cardIn {
+  from { opacity: 0; transform: translateY(18px) scale(0.97); }
+  to { opacity: 1; transform: translateY(0) scale(1); }
 }
 
 .group-label {
@@ -227,6 +271,7 @@ onUnmounted(() => {
 .stat-value {
   font-size: 15px;
   font-weight: 700;
+  font-variant-numeric: tabular-nums;
 }
 
 .stat-item.income .stat-value { color: #E6A23C; }
@@ -245,6 +290,21 @@ onUnmounted(() => {
   border-radius: 12px;
   padding: 20px;
   box-shadow: 0 2px 12px rgba(140, 90, 50, 0.08);
+  animation: cardIn 600ms cubic-bezier(0.32, 0.72, 0, 1) both;
+  transition: transform 300ms cubic-bezier(0.32, 0.72, 0, 1),
+              box-shadow 300ms cubic-bezier(0.32, 0.72, 0, 1);
+}
+
+.chart-card:nth-child(1) { animation-delay: 250ms; }
+.chart-card:nth-child(2) { animation-delay: 330ms; }
+.chart-card:nth-child(3) { animation-delay: 410ms; }
+.chart-card:nth-child(4) { animation-delay: 490ms; }
+.chart-card:nth-child(5) { animation-delay: 570ms; }
+.chart-card:nth-child(6) { animation-delay: 650ms; }
+
+.chart-card:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 8px 28px rgba(140, 90, 50, 0.12);
 }
 
 .chart-card h4 {
